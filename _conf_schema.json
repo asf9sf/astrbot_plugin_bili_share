@@ -1,0 +1,96 @@
+{
+  "enable_proactive": {
+    "description": "启用主动推送",
+    "type": "bool",
+    "default": true,
+    "hint": "开启后角色会自己在后台刷 B 站，刷到觉得有意思的会主动发给你。关闭后只能用 /推一个 手动触发"
+  },
+  "daily_limit": {
+    "description": "每个会话每天最多推几条",
+    "type": "int",
+    "default": 2,
+    "hint": "宁缺毋滥。建议 1-2，推多了就变成垃圾推送了"
+  },
+  "min_interval_hours": {
+    "description": "两次推送的最短间隔（小时）",
+    "type": "float",
+    "default": 4,
+    "hint": "防止连续轰炸，建议 3-6"
+  },
+  "quiet_hours": {
+    "description": "静默时段",
+    "type": "string",
+    "default": "0-8",
+    "hint": "格式 起始小时-结束小时，24 小时制。例如 0-8 表示凌晨到早上八点不推。填 0-0 表示不限制"
+  },
+  "active_hours": {
+    "description": "活跃判定时长（小时）",
+    "type": "float",
+    "default": 24,
+    "hint": "只有最近这么多小时内说过话的会话才会收到主动推送，冷掉的会话不打扰"
+  },
+  "score_threshold": {
+    "description": "推送分数线",
+    "type": "int",
+    "default": 7,
+    "hint": "角色自评分达到这个分数才推（0-10）。调高会明显减少推送量但质量更稳，调低则相反"
+  },
+  "candidate_count": {
+    "description": "每轮送进模型的候选数",
+    "type": "int",
+    "default": 8,
+    "hint": "越大越可能挑到好东西，但一次 LLM 调用的 token 也越多。建议 6-10"
+  },
+  "min_duration": {
+    "description": "视频最短时长（秒）",
+    "type": "int",
+    "default": 20,
+    "hint": "太短的多半是搬运片段，建议 20-60"
+  },
+  "max_duration": {
+    "description": "视频最长时长（秒）",
+    "type": "int",
+    "default": 600,
+    "hint": "短视频场景建议 300-900，太长用户不会点开。填 0 表示不限制"
+  },
+  "rids": {
+    "description": "抓取的分区",
+    "type": "string",
+    "default": "",
+    "hint": "填分区 rid，逗号分隔，留空则抓全站热门。常用：1动画 3音乐 4游戏 36知识 119鬼畜 129舞蹈 160生活 181影视 188科技 211美食 217动物"
+  },
+  "blacklist": {
+    "description": "黑名单关键词",
+    "type": "string",
+    "default": "时政,政治,军事,战争,恐怖,凶杀,案件,医疗,减肥药,带货,广告,擦边",
+    "hint": "标题/简介/分区里出现这些词直接排除。热榜里这类内容不少，建议保留"
+  },
+  "taste_hint": {
+    "description": "口味推断的补充要求",
+    "type": "string",
+    "default": "",
+    "hint": "可选。追加给模型的指示，例如「她只爱看猫和美食，绝不看游戏」"
+  },
+  "enable_tool": {
+    "description": "启用 LLM 工具（用户喊无聊时主动分享）",
+    "type": "bool",
+    "default": true,
+    "hint": "开启后需要在人格设置里勾选 share_video 工具"
+  },
+  "inject_prompt": {
+    "description": "向 LLM 注入分享能力提示",
+    "type": "bool",
+    "default": true
+  },
+  "check_interval_minutes": {
+    "description": "后台检查间隔（分钟）",
+    "type": "int",
+    "default": 20,
+    "hint": "每隔多久判断一次该不该推。太频繁会浪费抓取请求，建议 15-30"
+  },
+  "timeout": {
+    "description": "抓取超时（秒）",
+    "type": "int",
+    "default": 20
+  }
+}

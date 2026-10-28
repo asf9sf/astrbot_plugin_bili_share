@@ -1,0 +1,8 @@
+name: astrbot_plugin_bili_share
+display_name: B站刷片分享（角色主动投喂）
+desc: 让 AI 以自己的人格刷 B 站，按口味给视频打分，只把真正觉得有意思的分享给你
+version: v1.0.0
+author: asf9sf
+repo: https://github.com/asf9sf/astrbot_plugin_bili_share
+support_platforms:
+  - aiocqhttp
