@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from astrbot.api import logger
-from astrbot.api.event import AstrMessageEvent, EventMessageType, filter
+from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.message_components import Image, Plain
 from astrbot.api.provider import ProviderRequest
 from astrbot.api.star import Context, Star, StarTools
@@ -164,6 +164,19 @@ class BiliSharePlugin(Star):
             return str(event.get_session_id())
         except Exception:  # noqa: BLE001
             return "unknown"
+
+    def _touch(self, umo: str) -> None:
+        """记录会话活跃时间。主动推送只发给最近还在聊的会话，避免打扰冷掉的群。"""
+        try:
+            sess = self._session(umo)
+            now = time.time()
+            # 一分钟内不重复写盘，避免每条消息都触发一次文件写入
+            if now - float(sess.get("last_active", 0)) < 60:
+                return
+            sess["last_active"] = now
+            self._save_state()
+        except Exception:  # noqa: BLE001
+            pass
 
     # ---------------- 生命周期 ----------------
 
@@ -487,23 +500,16 @@ class BiliSharePlugin(Star):
 
     # ---------------- 钩子 ----------------
 
-    @filter.event_message_type(EventMessageType.ALL)
-    async def _track(self, event: AstrMessageEvent):
-        """记录会话活跃时间，主动推送只发给最近还在聊的人。"""
-        try:
-            sess = self._session(self._umo(event))
-            sess["last_active"] = time.time()
-            self._save_state()
-        except Exception:  # noqa: BLE001
-            pass
-
     @filter.on_llm_request()
     async def on_llm_request(self, event: AstrMessageEvent, req: ProviderRequest) -> None:
+        umo = self._umo(event)
+        # 记录活跃时间：主动推送只发给最近说过话的会话
+        self._touch(umo)
         # 缓存人格，供生成"口味"用
         try:
             sp = getattr(req, "system_prompt", "") or ""
             if sp:
-                self._persona_cache[self._umo(event)] = sp[:2000]
+                self._persona_cache[umo] = sp[:2000]
         except Exception:  # noqa: BLE001
             pass
 
@@ -558,6 +564,7 @@ class BiliSharePlugin(Star):
     async def cmd_push_now(self, event: AstrMessageEvent):
         """立刻推一条：/推一个"""
         umo = self._umo(event)
+        self._touch(umo)
         yield event.plain_result("我去刷一会儿…")
         picked = await self._pick(umo)
         if not picked:
@@ -573,7 +580,9 @@ class BiliSharePlugin(Star):
     @filter.command("不推了")
     async def cmd_off(self, event: AstrMessageEvent):
         """关闭本会话的主动推送"""
-        sess = self._session(self._umo(event))
+        umo = self._umo(event)
+        self._touch(umo)
+        sess = self._session(umo)
         sess["enabled"] = False
         self._save_state()
         yield event.plain_result("好，不主动推了。想看了发 /推一个。")
@@ -581,7 +590,9 @@ class BiliSharePlugin(Star):
     @filter.command("推送开")
     async def cmd_on(self, event: AstrMessageEvent):
         """重新开启本会话的主动推送"""
-        sess = self._session(self._umo(event))
+        umo = self._umo(event)
+        self._touch(umo)
+        sess = self._session(umo)
         sess["enabled"] = True
         self._save_state()
         yield event.plain_result(
@@ -592,6 +603,7 @@ class BiliSharePlugin(Star):
     async def cmd_taste(self, event: AstrMessageEvent):
         """查看当前的口味档案"""
         umo = self._umo(event)
+        self._touch(umo)
         taste = await self._ensure_taste(umo)
         lines = [
             "我现在的口味：",
@@ -604,10 +616,12 @@ class BiliSharePlugin(Star):
     @filter.command("口味重写")
     async def cmd_taste_reset(self, event: AstrMessageEvent):
         """清空口味档案，按当前人设重新推断"""
+        umo = self._umo(event)
+        self._touch(umo)
         self.state["taste"] = {}
         self._save_state()
         yield event.plain_result("正在重新想我到底爱看什么…")
-        taste = await self._ensure_taste(self._umo(event))
+        taste = await self._ensure_taste(umo)
         yield event.plain_result(
             f"好了。爱看：{'、'.join(taste.get('watch') or [])}\n{taste.get('tone') or ''}",
         )
